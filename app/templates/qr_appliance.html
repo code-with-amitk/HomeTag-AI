@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>{{ appliance.get("name") or "Appliance details" }} · HomeTag</title>
+    <style>
+      :root { color-scheme: light; font-family: system-ui, sans-serif; background: #f4f6f8; color: #17212b; }
+      body { margin: 0; padding: 1.25rem; }
+      main { box-sizing: border-box; max-width: 38rem; margin: 2rem auto; padding: 1.5rem; border-radius: 1rem; background: white; box-shadow: 0 0.4rem 1.5rem #14283b14; }
+      h1 { margin-top: 0; font-size: 1.6rem; }
+      h2 { margin: 1.6rem 0 0.6rem; font-size: 1.1rem; }
+      dl { display: grid; grid-template-columns: minmax(7rem, 0.8fr) 1.2fr; gap: 0.6rem 1rem; }
+      dt { color: #526170; } dd { margin: 0; overflow-wrap: anywhere; }
+      li + li { margin-top: 0.7rem; }
+      a { color: #075fb5; }
+      @media (max-width: 28rem) { body { padding: 0.5rem; } main { margin: 0.5rem auto; padding: 1rem; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>{{ appliance.get("name") or "Appliance details" }}</h1>
+      {% set metadata = [("Make", "make"), ("Model", "model"), ("Warranty expires", "warranty_expiry")] %}
+      {% if appliance.get("make") or appliance.get("model") or appliance.get("warranty_expiry") %}
+      <dl>
+        {% for label, field in metadata %}
+          {% if appliance.get(field) %}
+          <dt>{{ label }}</dt><dd>{{ appliance[field] }}</dd>
+          {% endif %}
+        {% endfor %}
+      </dl>
+      {% endif %}
+
+      {% if appliance.get("technician_contact") %}
+      <section>
+        <h2>Service contact</h2>
+        <p>{{ appliance.technician_contact.name }}</p>
+        {% if appliance.technician_contact.organization %}<p>{{ appliance.technician_contact.organization }}</p>{% endif %}
+        {% if appliance.technician_contact.phone %}<p><a href="tel:{{ appliance.technician_contact.phone }}">{{ appliance.technician_contact.phone }}</a></p>{% endif %}
+        {% if appliance.technician_contact.email %}<p><a href="mailto:{{ appliance.technician_contact.email }}">{{ appliance.technician_contact.email }}</a></p>{% endif %}
+      </section>
+      {% endif %}
+
+      {% if appliance.get("service_history") %}
+      <section>
+        <h2>Public service history</h2>
+        <ul>
+          {% for record in appliance.service_history %}
+          <li><strong>{{ record.serviced_at }}</strong> — {{ record.description }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+    </main>
+  </body>
+</html>

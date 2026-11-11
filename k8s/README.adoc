@@ -1,0 +1,46 @@
+:toc:
+:toclevels: 4
+
+== Steps to bringup cluster
+=== Docker image
+Build the image on your local machine
+```
+docker build -t hometag-ai:local .
+```
+
+=== Kubernets Deployment
+==== 1. Create namespace hometag
+```
+kubectl apply -f k8s/namespace.yaml
+```
+
+==== 2. Create postgress password, JWT key
+```
+kubectl create secret generic hometag-secrets -n hometag \
+  --from-literal=postgres-password="$(openssl rand -hex 24)" \
+  --from-literal=jwt-secret-key="$(openssl rand -hex 32)"
+```
+
+==== 3. Create postgres and redis Pod
+```
+kubectl apply -f k8s/configmap.yaml -f k8s/postgres.yaml -f k8s/redis.yaml
+kubectl rollout status statefulset/postgres -n hometag --timeout=300s
+kubectl rollout status deployment/redis -n hometag --timeout=180s
+```
+
+==== 4. Apply migration job
+```
+kubectl apply -f k8s/migration-job.yaml
+```
+
+==== 5. Wait for application
+```
+kubectl wait --for=condition=complete job/hometag-migrate -n hometag --timeout=300s
+```
+
+==== 6. Create API Pod and Ingress Pod
+```
+kubectl apply -f k8s/api.yaml -f k8s/ingress.yaml
+kubectl rollout status deployment/hometag-api -n hometag --timeout=300s
+kubectl get ingress -n hometag
+```

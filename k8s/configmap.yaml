@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hometag-config
+  namespace: hometag
+data:
+  POSTGRES_DB: hometag
+  POSTGRES_USER: hometag
+  HOMETAG_ENVIRONMENT: development
+  HOMETAG_LOG_LEVEL: INFO
+  HOMETAG_ACCESS_TOKEN_MINUTES: "30"

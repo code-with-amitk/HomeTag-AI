@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: Service       # https://code-with-amitk.github.io/System_Design/Concepts/Kubernets/Kubernets_manifests.html#services
+metadata:
+  name: hometag-api         # Service name
+  namespace: hometag
+spec:
+  type: ClusterIP
+  selector:
+    app: hometag-api
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment    # https://code-with-amitk.github.io/System_Design/Concepts/Kubernets/Kubernets_manifests.html#deployment
+metadata:
+  name: hometag-api
+  namespace: hometag
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hometag-api
+  template:
+    metadata:
+      labels:
+        app: hometag-api
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: api
+          image: hometag-ai:local     # Pull the image from the local Docker registry
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: hometag-config
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hometag-secrets
+                  key: postgres-password
+            - name: HOMETAG_JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hometag-secrets
+                  key: jwt-secret-key
+            - name: HOMETAG_DATABASE_URL
+              value: postgresql+psycopg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)
+            - name: HOMETAG_REDIS_URL
+              value: redis://redis:6379/0
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
